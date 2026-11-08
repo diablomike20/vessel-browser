@@ -1,6 +1,6 @@
 import { createSignal, For, onMount, Show, type Component } from "solid-js";
 import type { SettingsAccountProps } from "./settingsTypes";
-import { STATUS_MESSAGE_CLEAR_MS, STATUS_MESSAGE_LONG_CLEAR_MS } from "../../../../shared/ui-constants";
+import { STATUS_MESSAGE_CLEAR_MS } from "../../../../shared/ui-constants";
 
 const SettingsAccount: Component<SettingsAccountProps> = (props) => {
   const p = props.premium;
