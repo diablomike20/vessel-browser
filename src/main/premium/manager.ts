@@ -5,16 +5,7 @@ import {
   type Result,
 } from "../../shared/result";
 
-/**
- * Vessel Premium subscription manager.
- *
- * Architecture:
- * - Stripe Checkout handles payment (hosted by Stripe)
- * - A lightweight verification API (Cloudflare Worker) validates subscriptions
- * - Vessel caches the subscription status locally and re-validates periodically
- * - 7-day offline grace period: if we can't reach the verification API,
- *   an active subscription remains valid for 7 days from last validation
- */
+/** Local Community Edition feature access and compatibility IPC contracts. */
 
 const FREE_TOOL_ITERATION_LIMIT = 50;
 
@@ -27,27 +18,6 @@ type ActivationCodeVerifyResult = Result<
   { state: PremiumState },
   { state: PremiumState }
 >;
-
-async function readApiErrorDetail(res: Response): Promise<string> {
-  try {
-    const text = (await res.text()).trim();
-    if (!text) return "";
-
-    try {
-      const data = JSON.parse(text) as { error?: unknown; message?: unknown };
-      const detail = data.error || data.message;
-      if (typeof detail === "string" && detail.trim()) {
-        return detail.trim().slice(0, MAX_API_ERROR_LOG_LENGTH);
-      }
-    } catch {
-      // Fall back to logging the raw body below.
-    }
-
-    return text.slice(0, MAX_API_ERROR_LOG_LENGTH);
-  } catch {
-    return "";
-  }
-}
 
 // --- Premium feature definitions ---
 
