@@ -7,7 +7,7 @@ import {
   schedulePageSnapshotCapture,
 } from "../content/page-diff-monitor";
 import { invalidateExtractionCache } from "../content/extractor";
-import { getPremiumState, isPremiumActiveState } from "../premium/manager";
+import { isPremium } from "../premium/manager";
 import {
   assertTrustedIpcSender,
   isManagedTabIpcSender,
@@ -44,7 +44,7 @@ export function registerPageDiffHandlers(
   ipcMain.handle(Channels.PAGE_DIFF_HISTORY, (event) => {
     assertTrustedIpcSender(event);
     try {
-      if (!isPremiumActiveState(getPremiumState())) {
+      if (!isPremium()) {
         return { error: "Premium required" };
       }
       const activeTab = windowState.tabManager.getActiveTab();
