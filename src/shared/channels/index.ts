@@ -20,7 +20,6 @@ import { RunChannels } from "./run-channels";
 import { SecurityChannels } from "./security-channels";
 import { SessionChannels } from "./session-channels";
 import { SettingsChannels } from "./settings-channels";
-import { SupportChannels } from "./support-channels";
 import { TabChannels } from "./tab-channels";
 import { UIChannels } from "./ui-channels";
 import { UpdateChannels } from "./update-channels";
@@ -56,7 +55,6 @@ export const Channels = {
   ...SecurityChannels,
   ...SessionChannels,
   ...SettingsChannels,
-  ...SupportChannels,
   ...TabChannels,
   ...UIChannels,
   ...UpdateChannels,
@@ -89,7 +87,6 @@ export {
   SecurityChannels,
   SessionChannels,
   SettingsChannels,
-  SupportChannels,
   TabChannels,
   UIChannels,
   UpdateChannels,
