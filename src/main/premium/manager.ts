@@ -1,6 +1,6 @@
 import { loadSettings } from "../config/settings";
 
-/** Local Community Edition feature access and compatibility IPC contracts. */
+/** Local Community Edition feature availability and gate helpers. */
 
 const FREE_TOOL_ITERATION_LIMIT = 50;
 
