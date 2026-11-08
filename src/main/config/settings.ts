@@ -274,7 +274,9 @@ function clearStoredPremiumToken(): void {
   try {
     fs.unlinkSync(getPremiumTokenPath());
   } catch (err) {
-    if (!isMissingFileError(err)) throw err;
+    if (!isMissingFileError(err)) {
+      logger.warn("Could not delete legacy Vessel Premium token:", err);
+    }
   }
 }
 
