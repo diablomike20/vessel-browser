@@ -196,6 +196,7 @@ export function assertFeatureUnlocked(
 export async function getCheckoutUrl(
   email?: string,
 ): Promise<Result<{ url: string }>> {
+  return errorResult("Vessel billing is not available in Community Edition.");
   if (isAirGapped()) {
     return errorResult("Checkout is unavailable in air-gapped mode.");
   }
@@ -224,6 +225,7 @@ export async function getCheckoutUrl(
  * Open the Stripe Customer Portal for subscription management.
  */
 export async function getPortalUrl(): Promise<Result<{ url: string }>> {
+  return errorResult("Vessel billing is not available in Community Edition.");
   if (isAirGapped()) {
     return errorResult("Billing portal is unavailable in air-gapped mode.");
   }
@@ -267,6 +269,7 @@ export async function getPortalUrl(): Promise<Result<{ url: string }>> {
 export async function verifySubscription(
   identifier?: string,
 ): Promise<PremiumState> {
+  return getPremiumState();
   if (isAirGapped()) {
     return getPremiumState();
   }
@@ -323,6 +326,7 @@ export async function verifySubscription(
 export async function requestActivationCode(
   email: string,
 ): Promise<ActivationCodeStartResult> {
+  return errorResult("Vessel account activation is not available in Community Edition.");
   if (isAirGapped()) {
     return errorResult("Activation codes are unavailable in air-gapped mode.");
   }
@@ -365,6 +369,7 @@ export async function verifyActivationCode(
   code: string,
   challengeToken: string,
 ): Promise<ActivationCodeVerifyResult> {
+  return errorResult("Vessel account activation is not available in Community Edition.", { state: getPremiumState() });
   if (isAirGapped()) {
     return errorResult("Activation codes are unavailable in air-gapped mode.", {
       state: getPremiumState(),
@@ -434,29 +439,7 @@ export async function verifyActivationCode(
 let revalidationTimer: ReturnType<typeof setInterval> | null = null;
 
 export function startBackgroundRevalidation(): void {
-  if (revalidationTimer) return;
-  if (isAirGapped()) return;
-
-  // Check on startup if we need to revalidate
-  const { premium } = loadSettings();
-  const identifier = premium.verificationToken || premium.customerId;
-  if (identifier) {
-    const lastValidated = premium.validatedAt
-      ? new Date(premium.validatedAt).getTime()
-      : 0;
-    if (Date.now() - lastValidated > REVALIDATION_INTERVAL_MS) {
-      void verifySubscription(identifier);
-    }
-  }
-
-  // Then check every 24 hours
-  revalidationTimer = setInterval(() => {
-    const { premium: p } = loadSettings();
-    const currentIdentifier = p.verificationToken || p.customerId;
-    if (currentIdentifier) {
-      void verifySubscription(currentIdentifier);
-    }
-  }, REVALIDATION_INTERVAL_MS);
+  // Community Edition does not contact Vessel subscription services.
 }
 
 export function stopBackgroundRevalidation(): void {
