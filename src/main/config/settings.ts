@@ -4,7 +4,6 @@ import fs from "fs";
 import { z } from "zod";
 import type {
   CodexOAuthTokens,
-  InternalSettingKey,
   ProviderConfig,
   RendererSettableSettingKey,
   ReasoningEffortLevel,
@@ -54,14 +53,6 @@ const defaults: VesselSettings = {
   telemetryEnabled: false,
   defaultSearchEngine: "duckduckgo",
   historyRetentionDays: 90,
-  premium: {
-    status: "free",
-    customerId: "",
-    verificationToken: "",
-    email: "",
-    validatedAt: "",
-    expiresAt: "",
-  },
 };
 
 const SAVE_DEBOUNCE_MS = 150;
@@ -70,14 +61,9 @@ const CODEX_TOKENS_FILENAME = "vessel-codex-tokens";
 const PREMIUM_TOKEN_FILENAME = "vessel-premium-token";
 const logger = createLogger("Settings");
 
-const INTERNAL_SETTING_KEYS: ReadonlySet<InternalSettingKey> = new Set(["premium"]);
-
 /** Allowlist of setting keys accepted from renderer settings IPC. */
 export const RENDERER_SETTABLE_KEYS: ReadonlySet<RendererSettableSettingKey> = new Set(
-  Object.keys(defaults).filter(
-    (key): key is RendererSettableSettingKey =>
-      !INTERNAL_SETTING_KEYS.has(key as InternalSettingKey),
-  ),
+  Object.keys(defaults) as RendererSettableSettingKey[],
 );
 
 const SettingsValueSchemas: Record<keyof VesselSettings, z.ZodType> = {
@@ -138,14 +124,6 @@ const SettingsValueSchemas: Record<keyof VesselSettings, z.ZodType> = {
   }),
   sourceDoNotAllowList: z.array(z.string()),
   downloadPath: z.string(),
-  premium: z.object({
-    status: z.enum(["free", "active", "trialing", "past_due", "canceled"]),
-    customerId: z.string(),
-    verificationToken: z.string(),
-    email: z.string(),
-    validatedAt: z.string(),
-    expiresAt: z.string(),
-  }),
   telemetryEnabled: z.boolean(),
   defaultSearchEngine: z.enum(["duckduckgo", "google", "bing", "brave", "ecosia", "kagi", "none"]),
   historyRetentionDays: z.union([
@@ -334,7 +312,6 @@ function mergeChatProviderSecret(
 function buildPersistedSettings(source: VesselSettings): VesselSettings {
   return {
     ...source,
-    premium: { ...defaults.premium },
     chatProvider: source.chatProvider
       ? {
           ...source.chatProvider,
@@ -351,7 +328,6 @@ export function getRendererSettings(): VesselSettings {
   const hasCodexTokens = provider?.id === "openai_codex" && readStoredCodexTokens() !== null;
   return {
     ...current,
-    premium: { ...defaults.premium },
     chatProvider: provider
       ? {
           ...provider,
@@ -437,20 +413,17 @@ export function loadSettings(): VesselSettings {
       provider?: unknown;
       showAgentTranscript?: unknown;
       agentTranscriptMode?: unknown;
+      premium?: unknown;
     };
     delete parsed.apiKey;
     delete parsed.provider;
-    const parsedPremium =
-      parsed.premium && typeof parsed.premium === "object" ? parsed.premium : {};
-    const hadLegacyPremiumData = Object.values(parsedPremium).some(
-      (value) => typeof value === "string" && value.length > 0,
-    );
+    const hadLegacyPremiumSettings = Object.prototype.hasOwnProperty.call(parsed, "premium");
+    delete parsed.premium;
     clearStoredPremiumToken();
     settings = {
       ...defaults,
       ...parsed,
       telemetryEnabled: false,
-      premium: { ...defaults.premium },
       chatProvider: sanitizeChatProvider(mergeChatProviderSecret(parsed.chatProvider ?? null)),
       mcpPort: sanitizePort(parsed.mcpPort ?? defaults.mcpPort),
       sidebarPanelMode: sanitizeSidebarPanelMode(parsed.sidebarPanelMode),
@@ -467,7 +440,7 @@ export function loadSettings(): VesselSettings {
       ),
       historyRetentionDays: normalizeHistoryRetentionDays(parsed.historyRetentionDays),
     };
-    if (hadLegacyPremiumData) saveSettings();
+    if (hadLegacyPremiumSettings) saveSettings();
   } catch (error) {
     if (fs.existsSync(getSettingsPath())) {
       settingsIssues.push({
@@ -548,9 +521,6 @@ export function setSetting<K extends keyof VesselSettings>(
     }
   } else if (key === "telemetryEnabled") {
     settings!.telemetryEnabled = false;
-  } else if (key === "premium") {
-    clearStoredPremiumToken();
-    settings!.premium = { ...defaults.premium };
   } else {
     settings![key] = value;
   }
