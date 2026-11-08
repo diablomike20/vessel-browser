@@ -123,23 +123,13 @@ export const PREMIUM_FEATURES = new Set([
 
 // --- Status checks ---
 
+/**
+ * This fork is the local Community Edition: the open-source feature set is
+ * available without a Vessel Premium subscription. Billing/verification state
+ * remains separate and is still reported accurately by getPremiumState().
+ */
 export function isPremium(): boolean {
-  const { premium } = loadSettings();
-  if (premium.status !== "active" && premium.status !== "trialing") {
-    return false;
-  }
-
-  // Legacy installs may have an active cached state from before validation
-  // timestamps were persisted. Trust that state until the next verification.
-  if (!premium.validatedAt) {
-    return true;
-  }
-
-  const lastValidated = new Date(premium.validatedAt).getTime();
-  if (!Number.isFinite(lastValidated)) {
-    return false;
-  }
-  return Date.now() - lastValidated < OFFLINE_GRACE_PERIOD_MS;
+  return true;
 }
 
 function redactPremiumToken(state: PremiumState): PremiumState {
