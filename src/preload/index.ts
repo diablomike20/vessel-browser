@@ -555,41 +555,6 @@ const api = {
       return () => ipcRenderer.removeListener(Channels.HISTORY_UPDATE, handler);
     },
   },
-  premium: {
-    getState: (): Promise<PremiumState> => ipcRenderer.invoke(Channels.PREMIUM_GET_STATE),
-    requestCode: (
-      email: string,
-    ): Promise<{ ok: boolean; email?: string; challengeToken?: string; error?: string }> =>
-      ipcRenderer.invoke(Channels.PREMIUM_ACTIVATION_START, email),
-    verifyCode: (
-      email: string,
-      code: string,
-      challengeToken: string,
-    ): Promise<{ ok: boolean; state: PremiumState; error?: string }> =>
-      ipcRenderer.invoke(Channels.PREMIUM_ACTIVATION_VERIFY, email, code, challengeToken),
-    checkout: (email?: string): Promise<{ ok: boolean; error?: string }> =>
-      ipcRenderer.invoke(Channels.PREMIUM_CHECKOUT, email),
-    portal: (): Promise<{ ok: boolean; error?: string }> =>
-      ipcRenderer.invoke(Channels.PREMIUM_PORTAL),
-    reset: (): Promise<PremiumState> => ipcRenderer.invoke(Channels.PREMIUM_RESET),
-    trackContext: (
-      step:
-        | "chat_banner_viewed"
-        | "chat_banner_clicked"
-        | "settings_banner_viewed"
-        | "settings_banner_clicked"
-        | "welcome_banner_clicked"
-        | "premium_gate_seen"
-        | "premium_gate_clicked"
-        | "iteration_limit_seen"
-        | "iteration_limit_clicked",
-    ): Promise<void> => ipcRenderer.invoke(Channels.PREMIUM_TRACK_CONTEXT, step),
-    onUpdate: (cb: (state: PremiumState) => void): (() => void) => {
-      const handler = (_: unknown, state: PremiumState) => cb(state);
-      ipcRenderer.on(Channels.PREMIUM_UPDATE, handler);
-      return () => ipcRenderer.removeListener(Channels.PREMIUM_UPDATE, handler);
-    },
-  },
   sessions: {
     list: (): Promise<
       Array<{
