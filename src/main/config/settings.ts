@@ -70,11 +70,6 @@ const CODEX_TOKENS_FILENAME = "vessel-codex-tokens";
 const PREMIUM_TOKEN_FILENAME = "vessel-premium-token";
 const logger = createLogger("Settings");
 
-interface StoredPremiumToken {
-  version: 1;
-  verificationToken: string;
-}
-
 const INTERNAL_SETTING_KEYS: ReadonlySet<InternalSettingKey> = new Set(["premium"]);
 
 /** Allowlist of setting keys accepted from renderer settings IPC. */
@@ -168,7 +163,6 @@ let settingsIssues: RuntimeHealthIssue[] = [];
 let saveTimer: ReturnType<typeof setTimeout> | null = null;
 let saveDirty = false;
 let saveWriteChain: Promise<void> = Promise.resolve();
-let preserveLegacyPremiumToken = false;
 
 function isMissingFileError(err: unknown): boolean {
   return typeof err === "object" && err !== null && "code" in err && err.code === "ENOENT";
@@ -298,31 +292,6 @@ function getPremiumTokenPath(): string {
   return path.join(getUserDataPath(), PREMIUM_TOKEN_FILENAME);
 }
 
-function readStoredPremiumToken(): StoredPremiumToken | null {
-  try {
-    if (!canUseSafeStorage()) return null;
-    const raw = fs.readFileSync(getPremiumTokenPath());
-    const parsed = JSON.parse(safeStorage.decryptString(raw)) as Partial<StoredPremiumToken>;
-    if (parsed.version === 1 && typeof parsed.verificationToken === "string") {
-      return { version: 1, verificationToken: parsed.verificationToken };
-    }
-  } catch (err) {
-    if (!isMissingFileError(err)) {
-      logger.warn("Could not read stored Premium token:", err);
-    }
-  }
-  return null;
-}
-
-function writeStoredPremiumToken(verificationToken: string): void {
-  assertSafeStorageAvailable();
-  const payload: StoredPremiumToken = { version: 1, verificationToken };
-  writePrivateFile(
-    getPremiumTokenPath(),
-    safeStorage.encryptString(JSON.stringify(payload)),
-  );
-}
-
 function clearStoredPremiumToken(): void {
   try {
     fs.unlinkSync(getPremiumTokenPath());
@@ -365,12 +334,7 @@ function mergeChatProviderSecret(
 function buildPersistedSettings(source: VesselSettings): VesselSettings {
   return {
     ...source,
-    premium: {
-      ...source.premium,
-      verificationToken: preserveLegacyPremiumToken
-        ? source.premium.verificationToken
-        : "",
-    },
+    premium: { ...defaults.premium },
     chatProvider: source.chatProvider
       ? {
           ...source.chatProvider,
@@ -387,10 +351,7 @@ export function getRendererSettings(): VesselSettings {
   const hasCodexTokens = provider?.id === "openai_codex" && readStoredCodexTokens() !== null;
   return {
     ...current,
-    premium: {
-      ...current.premium,
-      verificationToken: "",
-    },
+    premium: { ...defaults.premium },
     chatProvider: provider
       ? {
           ...provider,
@@ -481,36 +442,15 @@ export function loadSettings(): VesselSettings {
     delete parsed.provider;
     const parsedPremium =
       parsed.premium && typeof parsed.premium === "object" ? parsed.premium : {};
-    const legacyPremiumToken =
-      typeof parsedPremium.verificationToken === "string"
-        ? parsedPremium.verificationToken
-        : "";
-    const storedPremiumToken = readStoredPremiumToken();
-    let premiumTokenMigrated = Boolean(storedPremiumToken && legacyPremiumToken);
-    if (!storedPremiumToken && legacyPremiumToken) {
-      try {
-        writeStoredPremiumToken(legacyPremiumToken);
-        premiumTokenMigrated = true;
-      } catch (error) {
-        preserveLegacyPremiumToken = true;
-        settingsIssues.push({
-          code: "settings-premium-token-migration-failed",
-          severity: "warning",
-          title: "Could not protect the Premium verification token",
-          detail: error instanceof Error ? error.message : "Unknown secure storage error.",
-          action: "The existing token remains available for this launch and was not removed.",
-        });
-      }
-    }
+    const hadLegacyPremiumData = Object.values(parsedPremium).some(
+      (value) => typeof value === "string" && value.length > 0,
+    );
+    clearStoredPremiumToken();
     settings = {
       ...defaults,
       ...parsed,
       telemetryEnabled: false,
-      premium: {
-        ...defaults.premium,
-        ...parsedPremium,
-        verificationToken: storedPremiumToken?.verificationToken || legacyPremiumToken,
-      },
+      premium: { ...defaults.premium },
       chatProvider: sanitizeChatProvider(mergeChatProviderSecret(parsed.chatProvider ?? null)),
       mcpPort: sanitizePort(parsed.mcpPort ?? defaults.mcpPort),
       sidebarPanelMode: sanitizeSidebarPanelMode(parsed.sidebarPanelMode),
@@ -527,7 +467,7 @@ export function loadSettings(): VesselSettings {
       ),
       historyRetentionDays: normalizeHistoryRetentionDays(parsed.historyRetentionDays),
     };
-    if (premiumTokenMigrated) saveSettings();
+    if (hadLegacyPremiumData) saveSettings();
   } catch (error) {
     if (fs.existsSync(getSettingsPath())) {
       settingsIssues.push({
@@ -548,14 +488,6 @@ function persistNow(): Promise<void> {
   if (saveTimer) {
     clearTimeout(saveTimer);
     saveTimer = null;
-  }
-  if (preserveLegacyPremiumToken && settings?.premium.verificationToken) {
-    try {
-      writeStoredPremiumToken(settings.premium.verificationToken);
-      preserveLegacyPremiumToken = false;
-    } catch (err) {
-      logger.warn("Premium token remains in legacy settings until secure storage recovers:", err);
-    }
   }
   const filePath = getSettingsPath();
   const payload = JSON.stringify(buildPersistedSettings(settings!), null, 2);
@@ -617,14 +549,8 @@ export function setSetting<K extends keyof VesselSettings>(
   } else if (key === "telemetryEnabled") {
     settings!.telemetryEnabled = false;
   } else if (key === "premium") {
-    const nextPremium = value as VesselSettings["premium"];
-    if (nextPremium.verificationToken) {
-      writeStoredPremiumToken(nextPremium.verificationToken);
-    } else {
-      clearStoredPremiumToken();
-    }
-    preserveLegacyPremiumToken = false;
-    settings!.premium = { ...nextPremium };
+    clearStoredPremiumToken();
+    settings!.premium = { ...defaults.premium };
   } else {
     settings![key] = value;
   }
