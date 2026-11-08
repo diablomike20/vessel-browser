@@ -303,47 +303,12 @@ const SettingsAccount: Component<SettingsAccountProps> = (props) => {
         >
           <div class="premium-section">
             <div class="premium-active-badge">
-              Premium Active
-              <Show when={p.state().status === "trialing"}>
-                {" "}(Trial)
-              </Show>
+              Community Edition — All Features Unlocked
             </div>
             <p class="premium-detail">
-              {p.state().email}
-              <Show when={p.state().expiresAt}>
-                {" "}&middot; Renews{" "}
-                {new Date(p.state().expiresAt).toLocaleDateString()}
-              </Show>
+              All premium-gated features included in this open-source build are enabled locally.
+              No subscription or account verification is required.
             </p>
-            <div class="premium-actions-row">
-              <button
-                class="premium-btn premium-btn-manage"
-                onClick={async () => {
-                  const result = await window.vessel.premium.portal();
-                  if (!result.ok) {
-                    p.setMessage({
-                      kind: "error",
-                      text: result.error || "Could not open billing portal.",
-                    });
-                    setTimeout(() => p.setMessage(null), STATUS_MESSAGE_LONG_CLEAR_MS);
-                  }
-                }}
-              >
-                Manage Subscription
-              </button>
-              <button
-                class="premium-btn premium-btn-reset"
-                onClick={async () => {
-                  const nextState = await window.vessel.premium.reset();
-                  p.setState(nextState);
-                  p.setEmail("");
-                  p.resetFlow();
-                  p.setMessage(null);
-                }}
-              >
-                Sign Out
-              </button>
-            </div>
             <Show when={p.message()}>
               {(msg) => (
                 <p
