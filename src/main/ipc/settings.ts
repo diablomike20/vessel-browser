@@ -11,7 +11,6 @@ import { getRuntimeHealth } from "../health/runtime-health";
 import { trackSettingChanged } from "../telemetry/posthog";
 import { createProvider } from "../ai/provider";
 import { regenerateMcpAuthToken, startMcpServer, stopMcpServer } from "../mcp/server";
-import { submitFeedback } from "../support/feedback";
 import {
   assertTrustedIpcSender,
   parseIpc,
@@ -80,15 +79,6 @@ export function registerSettingsHandlers(
   ipcMain.handle(Channels.MCP_REGENERATE_TOKEN, (event) => {
     assertTrustedIpcSender(event);
     return regenerateMcpAuthToken();
-  });
-
-  ipcMain.handle(Channels.SUPPORT_SUBMIT_FEEDBACK, async (event, email: unknown, message: unknown) => {
-    assertTrustedIpcSender(event);
-    return submitFeedback({
-      email: typeof email === "string" ? email : "",
-      message: typeof message === "string" ? message : "",
-      source: "settings_account",
-    });
   });
 
   ipcMain.handle(Channels.SETTINGS_SET, async (event, key: unknown, value: unknown) => {
