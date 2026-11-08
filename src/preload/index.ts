@@ -17,7 +17,6 @@ import type {
   HistoryState,
   HistoryPage,
   ImportResult,
-  PremiumState,
   ProviderConfig,
   ProviderModelsResult,
   RuntimeHealthState,
