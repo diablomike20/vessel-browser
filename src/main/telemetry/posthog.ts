@@ -3,7 +3,6 @@ import { randomUUID } from "crypto";
 import fs from "fs";
 import path from "path";
 import { loadSettings } from "../config/settings";
-import { isPremium } from "../premium/manager";
 import { isAirGapped } from "../config/air-gapped";
 
 /**
@@ -98,10 +97,8 @@ let flushTimer: ReturnType<typeof setInterval> | null = null;
 let sessionStartedAt: number | null = null;
 
 function isEnabled(): boolean {
-  if (isAirGapped()) return false;
-  if (POSTHOG_API_KEY === "YOUR_POSTHOG_KEY_HERE") return false;
-  if (process.env.VESSEL_DEV === "1") return false;
-  return loadSettings().telemetryEnabled !== false;
+  // Community Edition never sends usage analytics to Vessel or PostHog.
+  return false;
 }
 
 export function sanitizeTelemetryProperties(
@@ -141,7 +138,6 @@ export function trackEvent(
     event,
     properties: {
       ...sanitizeTelemetryProperties(properties, allowedKeys),
-      premium_status: isPremium() ? "premium" : "free",
       app_version: app.getVersion(),
       platform: process.platform,
       arch: process.arch,
