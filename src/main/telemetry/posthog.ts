@@ -2,8 +2,6 @@ import { app } from "electron";
 import { randomUUID } from "crypto";
 import fs from "fs";
 import path from "path";
-import { loadSettings } from "../config/settings";
-import { isAirGapped } from "../config/air-gapped";
 
 /**
  * Vessel Telemetry — anonymous usage analytics via PostHog.
