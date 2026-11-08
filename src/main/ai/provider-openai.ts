@@ -121,8 +121,8 @@ function openRouterRoutingOptions(providerId: ProviderId): Record<string, unknow
 
 export function buildOpenRouterAttributionHeaders(): Record<string, string> {
   return {
-    "HTTP-Referer": "https://github.com/unmodeled-tyler/vessel-browser",
-    "X-OpenRouter-Title": "Vessel Browser",
+    "HTTP-Referer": "https://github.com/diablomike20/vessel-browser",
+    "X-OpenRouter-Title": "Vessel Browser CE",
     "X-OpenRouter-Categories": "personal-agent,general-chat",
   };
 }
