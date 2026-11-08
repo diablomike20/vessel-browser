@@ -1,17 +1,9 @@
-import { app } from "electron";
 import { flushPersist, loadSettings, setSetting } from "../config/settings";
-import type { PremiumState, PremiumStatus } from "../../shared/types";
-import { createLogger } from "../../shared/logger";
-import { isAirGapped } from "../config/air-gapped";
+import type { PremiumState } from "../../shared/types";
 import {
   errorResult,
-  getErrorMessage,
-  okResult,
   type Result,
 } from "../../shared/result";
-import { readJsonResponse } from "../network/json-response";
-
-const logger = createLogger("Premium");
 
 /**
  * Vessel Premium subscription manager.
@@ -24,28 +16,7 @@ const logger = createLogger("Premium");
  *   an active subscription remains valid for 7 days from last validation
  */
 
-// The verification API URL — points to your Cloudflare Worker
-const VERIFICATION_API =
-  process.env.VESSEL_PREMIUM_API || "https://vesselpremium.quantaintellect.com";
-
 const FREE_TOOL_ITERATION_LIMIT = 50;
-const REVALIDATION_INTERVAL_MS = 24 * 60 * 60 * 1000; // 24 hours
-const MAX_API_ERROR_LOG_LENGTH = 300;
-
-function premiumRequestHeaders(): Record<string, string> {
-  return {
-    "Content-Type": "application/json",
-    "X-Vessel-Version": app.getVersion(),
-  };
-}
-
-type PremiumVerificationResponse = {
-  status: PremiumStatus;
-  customerId: string;
-  verificationToken: string;
-  email: string;
-  expiresAt: string;
-};
 
 type ActivationCodeStartResult = Result<{
   email: string;
@@ -187,264 +158,47 @@ export function assertFeatureUnlocked(
   }
 }
 
-// --- Stripe Checkout ---
+// --- Vessel-hosted billing is intentionally unavailable in Community Edition ---
 
-/**
- * Open a Stripe Checkout session in the user's default browser.
- * The verification API creates the checkout session and returns the URL.
- */
 export async function getCheckoutUrl(
-  email?: string,
+  _email?: string,
 ): Promise<Result<{ url: string }>> {
   return errorResult("Vessel billing is not available in Community Edition.");
-  if (isAirGapped()) {
-    return errorResult("Checkout is unavailable in air-gapped mode.");
-  }
-  try {
-    const params = new URLSearchParams();
-    if (email) params.set("email", email);
-
-    const res = await fetch(`${VERIFICATION_API}/checkout?${params}`, {
-      method: "POST",
-      headers: premiumRequestHeaders(),
-    });
-
-    if (!res.ok) {
-      const body = await res.text();
-      return errorResult(body || `HTTP ${res.status}`);
-    }
-
-    const { url } = (await res.json()) as { url: string };
-    return okResult({ url });
-  } catch (err) {
-    return errorResult(getErrorMessage(err, "Failed to create checkout"));
-  }
 }
 
-/**
- * Open the Stripe Customer Portal for subscription management.
- */
 export async function getPortalUrl(): Promise<Result<{ url: string }>> {
   return errorResult("Vessel billing is not available in Community Edition.");
-  if (isAirGapped()) {
-    return errorResult("Billing portal is unavailable in air-gapped mode.");
-  }
-  const current = loadSettings().premium;
-  const identifier = current.verificationToken;
-
-  if (!identifier) {
-    return errorResult(
-      "Verify your Premium subscription before opening billing management.",
-    );
-  }
-
-  try {
-    const res = await fetch(`${VERIFICATION_API}/portal`, {
-      method: "POST",
-      headers: premiumRequestHeaders(),
-      body: JSON.stringify({ identifier }),
-    });
-
-    if (!res.ok) {
-      const detail = await readApiErrorDetail(res);
-      return errorResult(detail || `HTTP ${res.status}`);
-    }
-
-    const { url } = (await res.json()) as { url?: unknown };
-    if (typeof url !== "string" || !url.trim()) {
-      return errorResult("Billing portal did not return a valid URL.");
-    }
-    return okResult({ url });
-  } catch (err) {
-    return errorResult(getErrorMessage(err, "Failed to open billing portal"));
-  }
 }
 
-// --- Subscription verification ---
-
-/**
- * Verify subscription status against the verification API.
- * Called on app launch and periodically in the background.
- */
 export async function verifySubscription(
-  identifier?: string,
+  _identifier?: string,
 ): Promise<PremiumState> {
   return getPremiumState();
-  if (isAirGapped()) {
-    return getPremiumState();
-  }
-
-  const current = loadSettings().premium;
-  const verificationIdentifier =
-    identifier || current.verificationToken || current.customerId;
-
-  if (!verificationIdentifier) {
-    return redactPremiumToken(current);
-  }
-
-  try {
-    const res = await fetch(`${VERIFICATION_API}/verify`, {
-      method: "POST",
-      headers: premiumRequestHeaders(),
-      body: JSON.stringify({ identifier: verificationIdentifier }),
-    });
-
-    if (!res.ok) {
-      // Can't reach API — keep current state (offline grace handles expiry)
-      const detail = await readApiErrorDetail(res);
-      logger.warn(
-        "Verification API returned a non-OK status:",
-        res.status,
-        detail,
-      );
-      return redactPremiumToken(current);
-    }
-
-    const data = (await res.json()) as PremiumVerificationResponse;
-
-    const updated: PremiumState = {
-      status: data.status,
-      customerId: data.customerId || current.customerId,
-      verificationToken: data.verificationToken || current.verificationToken,
-      email: data.email || current.email,
-      validatedAt: new Date().toISOString(),
-      expiresAt: data.expiresAt,
-    };
-
-    setSetting("premium", updated);
-    await flushPersist();
-    return redactPremiumToken(updated);
-  } catch (err) {
-    logger.warn("Verification failed:", err);
-    return redactPremiumToken(current);
-  }
 }
 
-/**
- * Request a short-lived activation code for the subscription email.
- */
 export async function requestActivationCode(
-  email: string,
+  _email: string,
 ): Promise<ActivationCodeStartResult> {
   return errorResult("Vessel account activation is not available in Community Edition.");
-  if (isAirGapped()) {
-    return errorResult("Activation codes are unavailable in air-gapped mode.");
-  }
-
-  const normalizedEmail = email.trim().toLowerCase();
-  if (!normalizedEmail) {
-    return errorResult("Email is required");
-  }
-
-  try {
-    const res = await fetch(`${VERIFICATION_API}/activate/start`, {
-      method: "POST",
-      headers: premiumRequestHeaders(),
-      body: JSON.stringify({ email: normalizedEmail }),
-    });
-
-    const data = await readJsonResponse(
-      res,
-      {} as { challengeToken?: string; error?: string },
-      (msg) => logger.warn("Failed to parse premium activation response:", msg),
-    );
-    if (!res.ok || !data.challengeToken) {
-      return errorResult(data.error || `HTTP ${res.status}`);
-    }
-
-    return okResult({
-      email: normalizedEmail,
-      challengeToken: data.challengeToken,
-    });
-  } catch (err) {
-    return errorResult(getErrorMessage(err, "Failed to send code"));
-  }
 }
 
-/**
- * Verify an emailed activation code and persist the verified premium token.
- */
 export async function verifyActivationCode(
-  email: string,
-  code: string,
-  challengeToken: string,
+  _email: string,
+  _code: string,
+  _challengeToken: string,
 ): Promise<ActivationCodeVerifyResult> {
-  return errorResult("Vessel account activation is not available in Community Edition.", { state: getPremiumState() });
-  if (isAirGapped()) {
-    return errorResult("Activation codes are unavailable in air-gapped mode.", {
-      state: getPremiumState(),
-    });
-  }
-
-  const normalizedEmail = email.trim().toLowerCase();
-  const trimmedCode = code.trim();
-  if (!normalizedEmail) {
-    return errorResult("Email is required", { state: getPremiumState() });
-  }
-  if (!trimmedCode) {
-    return errorResult("Code is required", { state: getPremiumState() });
-  }
-  if (!challengeToken.trim()) {
-    return errorResult("Request a new activation code and try again.", {
-      state: getPremiumState(),
-    });
-  }
-
-  try {
-    const res = await fetch(`${VERIFICATION_API}/activate/verify`, {
-      method: "POST",
-      headers: premiumRequestHeaders(),
-      body: JSON.stringify({
-        email: normalizedEmail,
-        code: trimmedCode,
-        challengeToken: challengeToken.trim(),
-      }),
-    });
-
-    const data = await readJsonResponse(
-      res,
-      {} as Partial<PremiumVerificationResponse> & { error?: string },
-      (msg) => logger.warn("Failed to parse premium verification response:", msg),
-    );
-    if (!res.ok) {
-      return errorResult(data.error || `HTTP ${res.status}`, {
-        state: getPremiumState(),
-      });
-    }
-
-    const updated: PremiumState = {
-      status: data.status ?? "free",
-      customerId: data.customerId || "",
-      verificationToken: data.verificationToken || "",
-      email: data.email || normalizedEmail,
-      validatedAt: new Date().toISOString(),
-      expiresAt: data.expiresAt || "",
-    };
-
-    setSetting("premium", updated);
-    await flushPersist();
-    const rendererState = redactPremiumToken(updated);
-    return isPremiumActiveState(updated)
-      ? okResult({ state: rendererState })
-      : errorResult("Subscription is not active.", { state: rendererState });
-  } catch (err) {
-    return errorResult(getErrorMessage(err, "Failed to verify code"), {
-      state: getPremiumState(),
-    });
-  }
+  return errorResult(
+    "Vessel account activation is not available in Community Edition.",
+    { state: getPremiumState() },
+  );
 }
-
-// --- Background revalidation ---
-
-let revalidationTimer: ReturnType<typeof setInterval> | null = null;
 
 export function startBackgroundRevalidation(): void {
-  // Community Edition does not contact Vessel subscription services.
+  // No Vessel subscription service is contacted by Community Edition.
 }
 
 export function stopBackgroundRevalidation(): void {
-  clearInterval(revalidationTimer);
-  revalidationTimer = null;
+  // Kept as a compatibility export; no timer is created in Community Edition.
 }
 
 export function isPremiumActiveState(state: PremiumState): boolean {
