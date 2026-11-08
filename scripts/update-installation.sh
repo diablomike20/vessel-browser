@@ -2,7 +2,7 @@
 set -euo pipefail
 
 INSTALL_DIR="${VESSEL_INSTALL_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
-BRANCH="${VESSEL_BRANCH:-main}"
+BRANCH="${VESSEL_BRANCH:-feature/community-unlock-all-premium}"
 CHECK_ONLY=0
 FORMAT="text"
 REQUIRED_NODE_VERSION="22.12.0"

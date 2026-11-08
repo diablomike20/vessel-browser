@@ -2,8 +2,8 @@
 set -euo pipefail
 umask 077
 
-REPO_URL="${VESSEL_REPO_URL:-https://github.com/unmodeled-tyler/vessel-browser.git}"
-BRANCH="${VESSEL_BRANCH:-main}"
+REPO_URL="${VESSEL_REPO_URL:-https://github.com/diablomike20/vessel-browser.git}"
+BRANCH="${VESSEL_BRANCH:-feature/community-unlock-all-premium}"
 INSTALL_DIR="${VESSEL_INSTALL_DIR:-$HOME/.local/share/vessel-browser}"
 BIN_DIR="${VESSEL_BIN_DIR:-$HOME/.local/bin}"
 DESKTOP_DIR="${VESSEL_DESKTOP_DIR:-$HOME/.local/share/applications}"
