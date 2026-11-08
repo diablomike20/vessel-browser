@@ -408,6 +408,7 @@ export function parseSettingValue<K extends keyof VesselSettings>(
 export function loadSettings(): VesselSettings {
   if (settings) return settings;
   settingsIssues = [];
+  clearStoredPremiumToken();
   try {
     const raw = fs.readFileSync(getSettingsPath(), "utf-8");
     const parsed = JSON.parse(raw) as Partial<VesselSettings> & {
@@ -421,7 +422,6 @@ export function loadSettings(): VesselSettings {
     delete parsed.provider;
     const hadLegacyPremiumSettings = Object.prototype.hasOwnProperty.call(parsed, "premium");
     delete parsed.premium;
-    clearStoredPremiumToken();
     settings = {
       ...defaults,
       ...parsed,
