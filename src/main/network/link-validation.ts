@@ -4,6 +4,7 @@ import https from "node:https";
 import { BlockList, isIP } from "node:net";
 import { createLogger } from "../../shared/logger";
 import { assertPermittedNavigationURL } from "./url-safety";
+import { isAirGapped } from "../config/air-gapped";
 
 const logger = createLogger("LinkValidation");
 
@@ -187,6 +188,11 @@ export async function validateLinkDestination(
   transport: LinkValidationTransport = defaultTransport,
 ): Promise<LinkValidationResult> {
   if (!isHttpUrl(url)) return { status: "unknown", checkedUrl: url, detail: "Non-HTTP URL" };
+  // This transport uses Node HTTP(S) directly and bypasses Electron session
+  // webRequest filters, so do not perform reachability probes in air-gapped mode.
+  if (isAirGapped()) {
+    return { status: "unknown", checkedUrl: url, detail: "Link validation skipped in air-gapped mode" };
+  }
   try {
     assertPermittedNavigationURL(url);
   } catch (error) {
