@@ -569,17 +569,6 @@ export interface HistoryPage {
   total: number;
 }
 
-export type PremiumStatus = "free" | "active" | "trialing" | "past_due" | "canceled";
-
-export interface PremiumState {
-  status: PremiumStatus;
-  customerId: string;
-  verificationToken: string;
-  email: string;
-  validatedAt: string;
-  expiresAt: string;
-}
-
 export type SearchEngineId =
   "duckduckgo" | "google" | "bing" | "brave" | "ecosia" | "kagi" | "none";
 
@@ -613,15 +602,13 @@ export interface VesselSettings {
   domainPolicy: DomainPolicy;
   sourceDoNotAllowList: string[];
   downloadPath: string;
-  premium: PremiumState;
   telemetryEnabled: boolean;
   defaultSearchEngine: SearchEngineId;
   historyRetentionDays: HistoryRetentionDays;
 }
 
-export type InternalSettingKey = "premium";
-export type RendererSettableSettings = Omit<VesselSettings, InternalSettingKey>;
-export type RendererSettableSettingKey = keyof RendererSettableSettings;
+export type RendererSettableSettings = VesselSettings;
+export type RendererSettableSettingKey = keyof VesselSettings;
 
 export type RuntimeHealthSeverity = "warning" | "error";
 
