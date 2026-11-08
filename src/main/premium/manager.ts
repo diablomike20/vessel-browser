@@ -1,23 +1,8 @@
-import { flushPersist, loadSettings, setSetting } from "../config/settings";
-import type { PremiumState } from "../../shared/types";
-import {
-  errorResult,
-  type Result,
-} from "../../shared/result";
+import { loadSettings } from "../config/settings";
 
 /** Local Community Edition feature access and compatibility IPC contracts. */
 
 const FREE_TOOL_ITERATION_LIMIT = 50;
-
-type ActivationCodeStartResult = Result<{
-  email: string;
-  challengeToken: string;
-}>;
-
-type ActivationCodeVerifyResult = Result<
-  { state: PremiumState },
-  { state: PremiumState }
->;
 
 // --- Premium feature definitions ---
 
@@ -72,41 +57,11 @@ export function isPremium(): boolean {
   return true;
 }
 
-/**
- * Vessel account and billing state is not part of Community Edition.
- * Never expose stale account identifiers or verification tokens from a
- * settings file migrated from the hosted edition.
- */
-export function getPremiumState(): PremiumState {
-  return {
-    status: "free",
-    customerId: "",
-    verificationToken: "",
-    email: "",
-    validatedAt: "",
-    expiresAt: "",
-  };
-}
-
 export function getEffectiveMaxIterations(): number {
   if (isPremium()) {
     return loadSettings().maxToolIterations || 200;
   }
   return FREE_TOOL_ITERATION_LIMIT;
-}
-
-export async function resetPremium(): Promise<PremiumState> {
-  const fresh: PremiumState = {
-    status: "free",
-    customerId: "",
-    verificationToken: "",
-    email: "",
-    validatedAt: "",
-    expiresAt: "",
-  };
-  setSetting("premium", fresh);
-  await flushPersist();
-  return fresh;
 }
 
 export function isToolGated(toolName: string): boolean {
@@ -134,51 +89,4 @@ export function assertFeatureUnlocked(
   if (isFeatureGated(featureName)) {
     throw new Error(`${featureLabel} requires Vessel Premium.`);
   }
-}
-
-// --- Vessel-hosted billing is intentionally unavailable in Community Edition ---
-
-export async function getCheckoutUrl(
-  _email?: string,
-): Promise<Result<{ url: string }>> {
-  return errorResult("Vessel billing is not available in Community Edition.");
-}
-
-export async function getPortalUrl(): Promise<Result<{ url: string }>> {
-  return errorResult("Vessel billing is not available in Community Edition.");
-}
-
-export async function verifySubscription(
-  _identifier?: string,
-): Promise<PremiumState> {
-  return getPremiumState();
-}
-
-export async function requestActivationCode(
-  _email: string,
-): Promise<ActivationCodeStartResult> {
-  return errorResult("Vessel account activation is not available in Community Edition.");
-}
-
-export async function verifyActivationCode(
-  _email: string,
-  _code: string,
-  _challengeToken: string,
-): Promise<ActivationCodeVerifyResult> {
-  return errorResult(
-    "Vessel account activation is not available in Community Edition.",
-    { state: getPremiumState() },
-  );
-}
-
-export function startBackgroundRevalidation(): void {
-  // No Vessel subscription service is contacted by Community Edition.
-}
-
-export function stopBackgroundRevalidation(): void {
-  // Kept as a compatibility export; no timer is created in Community Edition.
-}
-
-export function isPremiumActiveState(state: PremiumState): boolean {
-  return state.status === "active" || state.status === "trialing";
 }
