@@ -1,7 +1,6 @@
 import type { Accessor, Setter } from "solid-js";
 import type {
   AgentTranscriptDisplayMode,
-  PremiumState,
   ProviderId,
   ReasoningEffortLevel,
   RuntimeHealthState,
@@ -189,29 +188,6 @@ export interface AutofillProps {
   handleFill: (id: string) => Promise<void>;
 }
 
-export interface PremiumProps {
-  state: Accessor<PremiumState>;
-  setState: Setter<PremiumState>;
-  email: Accessor<string>;
-  setEmail: Setter<string>;
-  code: Accessor<string>;
-  setCode: Setter<string>;
-  challengeToken: Accessor<string>;
-  setChallengeToken: Setter<string>;
-  codeSent: Accessor<boolean>;
-  setCodeSent: Setter<boolean>;
-  loading: Accessor<boolean>;
-  setLoading: Setter<boolean>;
-  message: Accessor<{ kind: "success" | "error"; text: string } | null>;
-  setMessage: Setter<{
-    kind: "success" | "error";
-    text: string;
-  } | null>;
-  active: Accessor<boolean>;
-  startCheckout: () => void;
-  resetFlow: () => void;
-}
-
 export interface SessionsProps {
   list: Accessor<SessionSummary[]>;
   saveName: Accessor<string>;
@@ -235,8 +211,6 @@ export interface SettingsGeneralProps {
   setAutoRestoreSession: Setter<boolean>;
   clearBookmarksOnLaunch: Accessor<boolean>;
   setClearBookmarksOnLaunch: Setter<boolean>;
-  premiumActive: Accessor<boolean>;
-  startPremiumCheckout: () => void;
 }
 
 export interface SettingsAgentProps {
@@ -250,11 +224,9 @@ export interface SettingsAgentProps {
   obsidianVaultPath: Accessor<string>;
   setObsidianVaultPath: Setter<string>;
   health: Accessor<RuntimeHealthState | null>;
-  premiumActive: Accessor<boolean>;
 }
 
 export interface SettingsVaultsProps {
-  premiumActive: Accessor<boolean>;
   vault: VaultProps;
   humanVault: HumanVaultProps;
   autofill: AutofillProps;
@@ -272,7 +244,6 @@ export interface SettingsPrivacyProps {
 }
 
 export interface SettingsAccountProps {
-  premium: PremiumProps;
   sessions: SessionsProps;
   setStatus: Setter<{
     kind: "success" | "error";
