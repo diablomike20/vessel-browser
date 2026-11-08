@@ -4,7 +4,6 @@ import { useUI } from "../../stores/ui";
 import { useAnimatedPresence } from "../../lib/useAnimatedPresence";
 import type {
   AgentTranscriptDisplayMode,
-  PremiumState,
   ProviderId,
   ProviderConfig,
   ReasoningEffortLevel,
@@ -345,68 +344,8 @@ const Settings: Component = () => {
     }
   };
 
-  // Premium subscription
-  const [premiumState, setPremiumState] = createSignal<PremiumState>({
-    status: "free",
-    customerId: "",
-    verificationToken: "",
-    email: "",
-    validatedAt: "",
-    expiresAt: "",
-  });
-  const [premiumEmail, setPremiumEmail] = createSignal("");
-  const [premiumCode, setPremiumCode] = createSignal("");
-  const [premiumChallengeToken, setPremiumChallengeToken] = createSignal("");
-  const [premiumCodeSent, setPremiumCodeSent] = createSignal(false);
-  const [premiumLoading, setPremiumLoading] = createSignal(false);
-  const [premiumMessage, setPremiumMessage] = createSignal<{
-    kind: "success" | "error";
-    text: string;
-  } | null>(null);
-  let trackedSettingsPremiumBanner = false;
-
-  // Local Community Edition unlocks the complete open-source feature set.
-  // The actual subscription status remains in premiumState() for billing UI.
+  // CE-local feature availability; no Vessel subscription is consulted.
   const premiumActive = () => true;
-
-  const trackPremiumContext = (
-    step: "settings_banner_viewed" | "settings_banner_clicked" | "welcome_banner_clicked",
-  ) =>
-    window.vessel.premium.trackContext(step).catch((err) => {
-      logger.warn("Failed to track premium context:", err);
-    });
-
-  const startPremiumCheckout = async () => {
-    setPremiumLoading(true);
-    setPremiumMessage(null);
-    try {
-      const result = await window.vessel.premium.checkout(premiumEmail().trim() || undefined);
-      if (result.ok) {
-        setPremiumMessage({
-          kind: "success",
-          text: "Checkout opened. This screen will update when Premium activates.",
-        });
-      } else {
-        setPremiumMessage({
-          kind: "error",
-          text: result.error || "Could not open checkout.",
-        });
-      }
-    } catch (err) {
-      setPremiumMessage({
-        kind: "error",
-        text: err instanceof Error ? err.message : "Could not open checkout.",
-      });
-    } finally {
-      setPremiumLoading(false);
-    }
-  };
-
-  const resetPremiumActivationFlow = () => {
-    setPremiumCode("");
-    setPremiumChallengeToken("");
-    setPremiumCodeSent(false);
-  };
 
   // Chat provider settings
   const [chatEnabled, setChatEnabled] = createSignal(false);
@@ -552,14 +491,6 @@ const Settings: Component = () => {
       setDomainList("");
     }
     setSourceDoNotAllowList((settings.sourceDoNotAllowList ?? []).join("\n"));
-    // Load premium state
-    try {
-      const ps = await window.vessel.premium.getState();
-      setPremiumState(ps);
-      if (ps.email) setPremiumEmail(ps.email);
-    } catch (err) {
-      logger.warn("Failed to load premium state:", err);
-    }
     // Load vault entries
     await loadVaultEntries();
     await loadHumanEntries();
@@ -573,38 +504,14 @@ const Settings: Component = () => {
     const unsubscribe = window.vessel.settings.onHealthUpdate((nextHealth) => {
       setHealth(nextHealth);
     });
-    const unsubscribePremium = window.vessel.premium.onUpdate((nextState) => {
-      setPremiumState(nextState);
-      if (nextState.email) {
-        setPremiumEmail(nextState.email);
-      }
-      if (nextState.status === "active" || nextState.status === "trialing") {
-        resetPremiumActivationFlow();
-        setPremiumMessage({
-          kind: "success",
-          text:
-            nextState.status === "trialing"
-              ? "Premium trial active. Enjoy the unlocked toolkit."
-              : "Premium activated. Your premium tools are ready.",
-        });
-      }
-    });
     onCleanup(() => {
       unsubscribe();
-      unsubscribePremium();
     });
   });
 
   createEffect(() => {
     if (settingsOpen()) {
       void loadState();
-    }
-  });
-
-  createEffect(() => {
-    if (settingsOpen() && !premiumActive() && !trackedSettingsPremiumBanner) {
-      trackedSettingsPremiumBanner = true;
-      void window.vessel.premium.trackContext("settings_banner_viewed");
     }
   });
 
@@ -704,31 +611,6 @@ const Settings: Component = () => {
             Runtime Settings
           </h2>
 
-          <Show when={!premiumActive()}>
-            <div class="settings-compact-upsell">
-              <span class="settings-compact-upsell-text">
-                Premium: screenshots, saved sessions, credential vault, and longer autonomous runs.
-              </span>
-              <div class="settings-compact-upsell-actions">
-                <button
-                  class="premium-btn premium-btn-upgrade"
-                  onClick={() => {
-                    void trackPremiumContext("settings_banner_clicked");
-                    startPremiumCheckout();
-                  }}
-                >
-                  Try free for 7 days
-                </button>
-                <button
-                  class="premium-btn premium-btn-activate"
-                  onClick={() => selectCategory("account")}
-                >
-                  Activate
-                </button>
-              </div>
-            </div>
-          </Show>
-
           <div class="settings-layout">
             <nav class="settings-sidebar" role="navigation" aria-label="Settings categories">
               <button
@@ -794,8 +676,6 @@ const Settings: Component = () => {
                   setAutoRestoreSession={setAutoRestoreSession}
                   clearBookmarksOnLaunch={clearBookmarksOnLaunch}
                   setClearBookmarksOnLaunch={setClearBookmarksOnLaunch}
-                  premiumActive={premiumActive}
-                  startPremiumCheckout={startPremiumCheckout}
                 />
               </Show>
               <Show when={activeCategory() === "agent"}>
@@ -939,25 +819,6 @@ const Settings: Component = () => {
               </Show>
               <Show when={activeCategory() === "account"}>
                 <SettingsAccount
-                  premium={{
-                    state: premiumState,
-                    setState: setPremiumState,
-                    email: premiumEmail,
-                    setEmail: setPremiumEmail,
-                    code: premiumCode,
-                    setCode: setPremiumCode,
-                    challengeToken: premiumChallengeToken,
-                    setChallengeToken: setPremiumChallengeToken,
-                    codeSent: premiumCodeSent,
-                    setCodeSent: setPremiumCodeSent,
-                    loading: premiumLoading,
-                    setLoading: setPremiumLoading,
-                    message: premiumMessage,
-                    setMessage: setPremiumMessage,
-                    active: premiumActive,
-                    startCheckout: startPremiumCheckout,
-                    resetFlow: resetPremiumActivationFlow,
-                  }}
                   sessions={{
                     list: sessionList,
                     saveName: sessionSaveName,
