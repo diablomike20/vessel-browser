@@ -3,7 +3,6 @@ import type { SettingsAccountProps } from "./settingsTypes";
 import { STATUS_MESSAGE_CLEAR_MS } from "../../../../shared/ui-constants";
 
 const SettingsAccount: Component<SettingsAccountProps> = (props) => {
-  const p = props.premium;
   const s = props.sessions;
   const [currentVersion, setCurrentVersion] = createSignal("");
 
@@ -23,207 +22,17 @@ const SettingsAccount: Component<SettingsAccountProps> = (props) => {
         </p>
       </div>
 
-      {/* Vessel Premium */}
       <div class="settings-field">
-        <label class="settings-label">Vessel Premium</label>
-        <Show
-          when={p.active()}
-          fallback={
-            <div class="premium-section">
-              <p class="premium-description">
-                Unlock screenshot/vision analysis, session management,
-                Obsidian integration, workflow tracking, DevTools tools,
-                table extraction, Agent Credential Vault, and unlimited
-                tool iterations.
-              </p>
-              <div class="premium-activate-row">
-                <input
-                  class="settings-input premium-email-input"
-                  type="email"
-                  placeholder="Enter your subscription email"
-                  value={p.email()}
-                  onInput={(e) => {
-                    const nextEmail = e.currentTarget.value;
-                    if (nextEmail.trim().toLowerCase() !== p.email().trim().toLowerCase()) {
-                      p.resetFlow();
-                      p.setMessage(null);
-                    }
-                    p.setEmail(nextEmail);
-                  }}
-                  spellcheck={false}
-                />
-                <button
-                  class="premium-btn premium-btn-activate"
-                  disabled={p.loading() || !p.email().trim()}
-                  onClick={async () => {
-                    p.setLoading(true);
-                    p.setMessage(null);
-                    try {
-                      const result = await window.vessel.premium.requestCode(
-                        p.email().trim(),
-                      );
-                      if (result.ok) {
-                        p.setChallengeToken(result.challengeToken ?? "");
-                        p.setCodeSent(true);
-                        p.setMessage({
-                          kind: "success",
-                          text:
-                            "If a matching premium subscription exists, we sent a 6-digit code to that email.",
-                        });
-                      } else {
-                        p.resetFlow();
-                        p.setMessage({
-                          kind: "error",
-                          text: result.error || "Could not send code",
-                        });
-                      }
-                    } catch (err) {
-                      p.resetFlow();
-                      p.setMessage({
-                        kind: "error",
-                        text:
-                          err instanceof Error
-                            ? err.message
-                            : "Could not send code",
-                      });
-                    } finally {
-                      p.setLoading(false);
-                    }
-                  }}
-                >
-                  {p.loading()
-                    ? "Sending..."
-                    : p.codeSent()
-                      ? "Resend Code"
-                      : "Send Code"}
-                </button>
-              </div>
-              <Show when={p.codeSent()}>
-                <div class="premium-activate-row">
-                  <input
-                    class="settings-input premium-email-input"
-                    inputmode="numeric"
-                    maxLength={6}
-                    placeholder="Enter 6-digit code"
-                    value={p.code()}
-                    onInput={(e) => {
-                      const nextCode = e.currentTarget.value.replace(/\D+/g, "").slice(0, 6);
-                      p.setCode(nextCode);
-                      p.setMessage(null);
-                    }}
-                    spellcheck={false}
-                  />
-                  <button
-                    class="premium-btn premium-btn-activate"
-                    disabled={
-                      p.loading() ||
-                      !p.email().trim() ||
-                      p.code().trim().length !== 6 ||
-                      !p.challengeToken()
-                    }
-                    onClick={async () => {
-                      p.setLoading(true);
-                      p.setMessage(null);
-                      try {
-                        const result = await window.vessel.premium.verifyCode(
-                          p.email().trim(),
-                          p.code().trim(),
-                          p.challengeToken(),
-                        );
-                        p.setState(result.state);
-                        if (result.ok) {
-                          p.resetFlow();
-                          p.setMessage({
-                            kind: "success",
-                            text: "Premium activated!",
-                          });
-                        } else {
-                          p.setMessage({
-                            kind: "error",
-                            text: result.error || "Verification failed",
-                          });
-                        }
-                      } catch (err) {
-                        p.setMessage({
-                          kind: "error",
-                          text:
-                            err instanceof Error
-                              ? err.message
-                              : "Verification failed",
-                        });
-                      } finally {
-                        p.setLoading(false);
-                      }
-                    }}
-                  >
-                    {p.loading() ? "Verifying..." : "Verify Code"}
-                  </button>
-                </div>
-              </Show>
-              <button
-                class="premium-btn premium-btn-upgrade"
-                disabled={p.loading()}
-                onClick={() => {
-                  p.startCheckout();
-                }}
-              >
-                {p.loading()
-                  ? "Opening Checkout..."
-                  : "Subscribe to Premium — $5.99/mo after 7-day free trial"}
-              </button>
-              <Show when={p.message()}>
-                {(msg) => (
-                  <p
-                    class="settings-status"
-                    classList={{
-                      success: msg().kind === "success",
-                      error: msg().kind === "error",
-                    }}
-                  >
-                    {msg().text}
-                  </p>
-                )}
-              </Show>
-              <Show when={p.state().email || p.email()}>
-                <button
-                  class="premium-btn premium-btn-reset"
-                  onClick={async () => {
-                    const nextState = await window.vessel.premium.reset();
-                    p.setState(nextState);
-                    p.setEmail("");
-                    p.resetFlow();
-                    p.setMessage(null);
-                  }}
-                >
-                  Clear Saved Email
-                </button>
-              </Show>
-            </div>
-          }
-        >
-          <div class="premium-section">
-            <div class="premium-active-badge">
-              Community Edition — All Features Unlocked
-            </div>
-            <p class="premium-detail">
-              All premium-gated features included in this open-source build are enabled locally.
-              No subscription or account verification is required.
-            </p>
-            <Show when={p.message()}>
-              {(msg) => (
-                <p
-                  class="settings-status"
-                  classList={{
-                    success: msg().kind === "success",
-                    error: msg().kind === "error",
-                  }}
-                >
-                  {msg().text}
-                </p>
-              )}
-            </Show>
+        <label class="settings-label">Community Edition</label>
+        <div class="premium-section">
+          <div class="premium-active-badge">
+            All Local Features Unlocked
           </div>
-        </Show>
+          <p class="premium-detail">
+            Features included in this build run locally. No Vessel account,
+            subscription, activation, or hosted billing is required.
+          </p>
+        </div>
       </div>
 
       {/* Saved Sessions */}
