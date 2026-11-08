@@ -30,7 +30,6 @@ const VERIFICATION_API =
 
 const FREE_TOOL_ITERATION_LIMIT = 50;
 const REVALIDATION_INTERVAL_MS = 24 * 60 * 60 * 1000; // 24 hours
-const OFFLINE_GRACE_PERIOD_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
 const MAX_API_ERROR_LOG_LENGTH = 300;
 
 function premiumRequestHeaders(): Record<string, string> {
