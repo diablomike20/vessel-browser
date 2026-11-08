@@ -12,19 +12,8 @@ const SettingsVaults: Component<SettingsVaultsProps> = (props) => {
       <div class="settings-field">
         <label class="settings-label">
           Agent Credential Vault
-          <Show when={!props.premiumActive()}>
-            <span class="vault-premium-badge">Premium</span>
-          </Show>
         </label>
-        <Show
-          when={props.premiumActive()}
-          fallback={
-            <p class="settings-hint">
-              Securely store credentials for agent-driven logins. Upgrade to
-              Premium to unlock the Agent Credential Vault.
-            </p>
-          }
-        >
+        <Show when={true}>
           <p class="settings-hint" style="margin-bottom: 10px">
             Store credentials for agent-driven logins. Credentials are encrypted
             at rest and never sent to AI providers — they are filled directly
@@ -159,19 +148,8 @@ const SettingsVaults: Component<SettingsVaultsProps> = (props) => {
       <div class="settings-field">
         <label class="settings-label">
           Passwords
-          <Show when={!props.premiumActive()}>
-            <span class="vault-premium-badge">Premium</span>
-          </Show>
         </label>
-        <Show
-          when={props.premiumActive()}
-          fallback={
-            <p class="settings-hint">
-              Your personal password manager. Save, organize, and autofill login
-              credentials. Upgrade to Premium to unlock Passwords.
-            </p>
-          }
-        >
+        <Show when={true}>
           <p class="settings-hint" style="margin-bottom: 10px">
             Save login credentials for any website. Passwords are encrypted
             locally and filled directly into login forms. The agent can list and
