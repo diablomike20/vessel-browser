@@ -365,10 +365,9 @@ const Settings: Component = () => {
   } | null>(null);
   let trackedSettingsPremiumBanner = false;
 
-  const premiumActive = () => {
-    const s = premiumState().status;
-    return s === "active" || s === "trialing";
-  };
+  // Local Community Edition unlocks the complete open-source feature set.
+  // The actual subscription status remains in premiumState() for billing UI.
+  const premiumActive = () => true;
 
   const trackPremiumContext = (
     step: "settings_banner_viewed" | "settings_banner_clicked" | "welcome_banner_clicked",
