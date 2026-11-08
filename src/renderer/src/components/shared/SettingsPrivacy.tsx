@@ -98,25 +98,10 @@ const SettingsPrivacy: Component<SettingsPrivacyProps> = (props) => {
       </div>
 
       <div class="settings-field">
-        <label class="settings-toggle">
-          <button
-            type="button"
-            class="toggle-switch"
-            classList={{ on: props.telemetryEnabled() }}
-            onClick={() =>
-              props.setTelemetryEnabled(!props.telemetryEnabled())
-            }
-            role="switch"
-            aria-checked={props.telemetryEnabled()}
-          >
-            <span class="toggle-switch-thumb" />
-          </button>
-          <span>Anonymous Usage Analytics</span>
-        </label>
+        <label class="settings-label">Usage Analytics</label>
         <p class="settings-hint">
-          Help improve Vessel by sending anonymous usage data (tool popularity,
-          session duration, provider type). No URLs, page content, queries, or
-          personal data is ever collected.
+          Disabled in Community Edition. This build does not send usage analytics
+          or device identifiers to Vessel or PostHog.
         </p>
       </div>
     </div>
