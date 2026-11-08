@@ -23,7 +23,6 @@ import {
 import { installAdBlocking } from "./network/ad-blocking";
 import { installDownloadHandler } from "./network/downloads";
 import { flushBeforeDispose } from "./shutdown";
-import { startTelemetry, stopTelemetry } from "./telemetry/posthog";
 import * as bookmarkManager from "./bookmarks/manager";
 import * as historyManager from "./history/manager";
 import { installPermissionHandler } from "./security/permissions";
@@ -319,7 +318,6 @@ async function bootstrap(): Promise<void> {
 
   installDownloadHandler(chromeView);
   installPermissionHandler();
-  startTelemetry();
 
   const initializeChromeRenderer = () => {
     if (didInitializeChromeRenderer) return;
@@ -393,7 +391,6 @@ app
 
 app.on("window-all-closed", () => {
   globalShortcut.unregisterAll();
-  stopTelemetry();
   void flushBeforeDispose(
     [
       runtime,
