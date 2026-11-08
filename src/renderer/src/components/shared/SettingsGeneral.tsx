@@ -44,20 +44,6 @@ const SettingsGeneral: Component<SettingsGeneralProps> = (props) => {
               for a quick reference
             </li>
           </ol>
-          <Show when={!props.premiumActive()}>
-            <div class="welcome-banner-actions">
-              <button
-                class="premium-btn premium-btn-upgrade"
-                onClick={props.startPremiumCheckout}
-              >
-                Try Premium free for 7 days — $5.99/mo after
-              </button>
-              <span class="welcome-banner-note">
-                Best for screenshots, saved sessions, credential vault, and
-                longer autonomous runs.
-              </span>
-            </div>
-          </Show>
         </div>
       </Show>
 
