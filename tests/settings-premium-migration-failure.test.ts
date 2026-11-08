@@ -4,13 +4,17 @@ import os from "node:os";
 import path from "node:path";
 import test from "node:test";
 
-import { app } from "electron";
+import { app, safeStorage } from "electron";
 
 test("Community Edition discards legacy Vessel identity without requiring secure storage", async () => {
   const userDataPath = fs.mkdtempSync(path.join(os.tmpdir(), "vessel-premium-failed-migration-"));
   const mutableApp = app as unknown as { getPath: (name: string) => string };
+  const mutableSafeStorage = safeStorage as typeof safeStorage & {
+    __setEncryptionAvailable: (value: boolean) => void;
+  };
   const originalGetPath = mutableApp.getPath;
   mutableApp.getPath = () => userDataPath;
+  mutableSafeStorage.__setEncryptionAvailable(false);
   const settingsPath = path.join(userDataPath, "vessel-settings.json");
   const tokenPath = path.join(userDataPath, "vessel-premium-token");
 
@@ -47,6 +51,7 @@ test("Community Edition discards legacy Vessel identity without requiring secure
     assert.equal("premium" in persisted, false);
     assert.equal(persisted.theme, "light");
   } finally {
+    mutableSafeStorage.__setEncryptionAvailable(true);
     mutableApp.getPath = originalGetPath;
     fs.rmSync(userDataPath, { recursive: true, force: true });
   }
