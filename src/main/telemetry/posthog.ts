@@ -1,103 +1,13 @@
-import { app } from "electron";
-import { randomUUID } from "crypto";
-import fs from "fs";
-import path from "path";
-
 /**
- * Vessel Telemetry — anonymous usage analytics via PostHog.
+ * Community Edition telemetry compatibility layer.
  *
- * What we track:
- *   - App launches (DAU/WAU/MAU)
- *   - Tool calls by name (popularity, no arguments or results)
- *   - AI provider type (anthropic/openai/ollama/etc, never keys)
- *   - Premium status (free/active/trialing)
- *   - Page types agents interact with
- *   - Session duration (approximate)
- *
- * What we NEVER track:
- *   - URLs, page content, queries, bookmarks, highlights
- *   - API keys, emails, or any PII
- *   - Tool arguments or results
- *   - Specific page content or user data
- *
- * Users can opt out at any time in Settings.
+ * The CE intentionally has no analytics transport, device identifier,
+ * background timer, or remote telemetry endpoint.
  */
 
-const POSTHOG_API_KEY = process.env.POSTHOG_API_KEY || "phc_OMeM3P5cxJwl14lOKxYad0Yre52xvjNfkLEFnPtXyM";
-const POSTHOG_HOST =
-  process.env.POSTHOG_HOST || "https://us.i.posthog.com";
-
-const BATCH_INTERVAL_MS = 60_000; // Flush every 60 seconds
-const MAX_BATCH_SIZE = 50;
 const SENSITIVE_PROPERTY_RE = /url|uri|query|prompt|content|text|token|secret|key|password|credential|email|domain/i;
 const SENSITIVE_STRING_VALUE_RE =
   /https?:\/\/|www\.|[^\s@]+@[^\s@]+\.[^\s@]+|bearer\s+\S+|eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.|(?:sk|pk|rk|gh[pousr]|xox[baprs])-[-_A-Za-z0-9]{12,}/i;
-const EMPTY_PROPERTY_ALLOWLIST = new Set<string>();
-const TELEMETRY_PROPERTY_ALLOWLIST: Record<string, ReadonlySet<string>> = {
-  app_launched: new Set(["electron_version", "chrome_version"]),
-  app_session_ended: new Set(["duration_minutes"]),
-  tool_called: new Set(["tool_name", "page_type"]),
-  provider_configured: new Set(["provider_id"]),
-  page_type_detected: new Set(["page_type"]),
-  setting_changed: new Set(["setting_key"]),
-  approval_mode_changed: new Set(["mode"]),
-  bookmark_action: new Set(["action"]),
-  vault_action: new Set(["action"]),
-  extraction_failed: new Set(["reason"]),
-  premium_funnel: new Set([
-    "step",
-    "status",
-    "reason",
-    "source",
-    "previous_status",
-    "new_status",
-  ]),
-};
-
-// --- Anonymous device ID (persistent, no PII) ---
-
-function getDeviceIdPath(): string {
-  return path.join(app.getPath("userData"), ".vessel-device-id");
-}
-
-let deviceId: string | null = null;
-
-function getDeviceId(): string {
-  if (deviceId) return deviceId;
-  const idPath = getDeviceIdPath();
-  try {
-    deviceId = fs.readFileSync(idPath, "utf-8").trim();
-    if (deviceId) return deviceId;
-  } catch {
-    // File doesn't exist yet
-  }
-  deviceId = randomUUID();
-  try {
-    fs.mkdirSync(path.dirname(idPath), { recursive: true });
-    fs.writeFileSync(idPath, deviceId, { encoding: "utf-8", mode: 0o600 });
-    fs.chmodSync(idPath, 0o600);
-  } catch {
-    // Non-critical — we'll generate a new one next launch
-  }
-  return deviceId;
-}
-
-// --- Event queue ---
-
-interface TelemetryEvent {
-  event: string;
-  properties: Record<string, unknown>;
-  timestamp: string;
-}
-
-let eventQueue: TelemetryEvent[] = [];
-let flushTimer: ReturnType<typeof setInterval> | null = null;
-let sessionStartedAt: number | null = null;
-
-function isEnabled(): boolean {
-  // Community Edition never sends usage analytics to Vessel or PostHog.
-  return false;
-}
 
 export function sanitizeTelemetryProperties(
   properties: Record<string, unknown>,
@@ -122,183 +32,38 @@ export function sanitizeTelemetryProperties(
   return safe;
 }
 
-// --- Public API ---
-
+// No-op compatibility exports. Existing local features may continue to call
+// these helpers without creating network requests or collecting analytics.
 export function trackEvent(
-  event: string,
-  properties: Record<string, unknown> = {},
-): void {
-  if (!isEnabled()) return;
-  const allowedKeys =
-    TELEMETRY_PROPERTY_ALLOWLIST[event] ?? EMPTY_PROPERTY_ALLOWLIST;
+  _event: string,
+  _properties: Record<string, unknown> = {},
+): void {}
 
-  eventQueue.push({
-    event,
-    properties: {
-      ...sanitizeTelemetryProperties(properties, allowedKeys),
-      app_version: app.getVersion(),
-      platform: process.platform,
-      arch: process.arch,
-    },
-    timestamp: new Date().toISOString(),
-  });
+export function trackToolCall(_toolName: string, _pageType?: string): void {}
 
-  if (eventQueue.length >= MAX_BATCH_SIZE) {
-    void flush();
-  }
-}
+export function trackProviderConfigured(_providerId: string): void {}
 
-export function trackToolCall(toolName: string, pageType?: string): void {
-  trackEvent("tool_called", {
-    tool_name: toolName,
-    page_type: pageType || "unknown",
-  });
-}
+export function trackPageTypeDetected(_pageType: string): void {}
 
-export function trackProviderConfigured(providerId: string): void {
-  trackEvent("provider_configured", {
-    provider_id: providerId,
-  });
-}
+export function trackSettingChanged(_key: string): void {}
 
-export function trackPageTypeDetected(pageType: string): void {
-  trackEvent("page_type_detected", {
-    page_type: pageType,
-  });
-}
-
-// --- Feature usage tracking ---
-
-export function trackSettingChanged(key: string): void {
-  trackEvent("setting_changed", { setting_key: key });
-}
-
-export function trackApprovalModeChanged(mode: string): void {
-  trackEvent("approval_mode_changed", { mode });
-}
+export function trackApprovalModeChanged(_mode: string): void {}
 
 export function trackBookmarkAction(
-  action: "save" | "remove" | "folder_create" | "folder_remove" | "export" | "import",
-): void {
-  trackEvent("bookmark_action", { action });
-}
+  _action: "save" | "remove" | "folder_create" | "folder_remove" | "export" | "import",
+): void {}
 
-export function trackVaultAction(action: "credential_added" | "credential_removed" | "login_fill" | "totp_fill"): void {
-  trackEvent("vault_action", { action });
-}
+export function trackVaultAction(
+  _action: "credential_added" | "credential_removed" | "login_fill" | "totp_fill",
+): void {}
 
-export function trackExtractionFailed(_domain: string, reason: string): void {
-  trackEvent("extraction_failed", { reason });
-}
+export function trackExtractionFailed(_domain: string, _reason: string): void {}
 
 export function trackPremiumFunnel(
-  step:
-    | "activation_attempted"
-    | "activation_succeeded"
-    | "activation_failed"
-    | "checkout_clicked"
-    | "portal_opened"
-    | "reset"
-    | "chat_banner_viewed"
-    | "chat_banner_clicked"
-    | "settings_banner_viewed"
-    | "settings_banner_clicked"
-    | "welcome_banner_clicked"
-    | "premium_gate_seen"
-    | "premium_gate_clicked"
-    | "iteration_limit_seen"
-    | "iteration_limit_clicked"
-    | "checkout_success_seen"
-    | "checkout_canceled"
-    | "checkout_open_failed"
-    | "activation_code_requested"
-    | "activation_code_sent"
-    | "activation_code_failed"
-    | "premium_verify_started"
-    | "premium_verify_succeeded"
-    | "premium_verify_failed"
-    | "premium_status_changed"
-    | "auto_activation_attempted"
-    | "auto_activation_succeeded"
-    | "auto_activation_failed",
-  context?: Record<string, unknown>,
-): void {
-  trackEvent("premium_funnel", { step, ...context });
-}
+  _step: string,
+  _context?: Record<string, unknown>,
+): void {}
 
-// --- Lifecycle ---
+export function startTelemetry(): void {}
 
-export function startTelemetry(): void {
-  if (!isEnabled()) return;
-
-  sessionStartedAt = Date.now();
-
-  trackEvent("app_launched", {
-    electron_version: process.versions.electron,
-    chrome_version: process.versions.chrome,
-  });
-
-  // Periodic flush
-  flushTimer = setInterval(() => {
-    void flush();
-  }, BATCH_INTERVAL_MS);
-}
-
-export function stopTelemetry(): void {
-  if (sessionStartedAt) {
-    const durationMinutes = Math.round(
-      (Date.now() - sessionStartedAt) / 60_000,
-    );
-    trackEvent("app_session_ended", {
-      duration_minutes: durationMinutes,
-    });
-    sessionStartedAt = null;
-  }
-
-  if (flushTimer) {
-    clearInterval(flushTimer);
-  }
-  flushTimer = null;
-
-  // Final synchronous flush on shutdown
-  void flush();
-}
-
-// --- PostHog batch API ---
-
-async function flush(): Promise<void> {
-  if (eventQueue.length === 0) return;
-  if (!isEnabled()) {
-    eventQueue = [];
-    return;
-  }
-
-  const batch = eventQueue.splice(0);
-  const distinctId = getDeviceId();
-
-  const payload = {
-    api_key: POSTHOG_API_KEY,
-    batch: batch.map((e) => ({
-      event: e.event,
-      properties: {
-        distinct_id: distinctId,
-        ...e.properties,
-      },
-      timestamp: e.timestamp,
-    })),
-  };
-
-  try {
-    await fetch(`${POSTHOG_HOST}/batch`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-  } catch {
-    // Silently fail — telemetry should never block the app.
-    // Re-queue events for next flush attempt (drop if too many).
-    if (eventQueue.length < MAX_BATCH_SIZE * 2) {
-      eventQueue.unshift(...batch);
-    }
-  }
-}
+export function stopTelemetry(): void {}
