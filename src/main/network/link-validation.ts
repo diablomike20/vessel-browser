@@ -118,7 +118,7 @@ const defaultTransport: LinkValidationTransport = {
         {
           method,
           headers: {
-            "user-agent": "Vessel/0.1.0 (+https://github.com/unmodeled-tyler/vessel-browser)",
+            "user-agent": "Vessel Browser CE/0.1.0 (+https://github.com/diablomike20/vessel-browser)",
           },
           family: resolved.family,
           autoSelectFamily: false,
