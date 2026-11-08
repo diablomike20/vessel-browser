@@ -5,10 +5,6 @@ import { STATUS_MESSAGE_CLEAR_MS, STATUS_MESSAGE_LONG_CLEAR_MS } from "../../../
 const SettingsAccount: Component<SettingsAccountProps> = (props) => {
   const p = props.premium;
   const s = props.sessions;
-  const [feedbackExpanded, setFeedbackExpanded] = createSignal(false);
-  const [feedbackEmail, setFeedbackEmail] = createSignal(p.state().email || "");
-  const [feedbackMessage, setFeedbackMessage] = createSignal("");
-  const [feedbackSending, setFeedbackSending] = createSignal(false);
   const [currentVersion, setCurrentVersion] = createSignal("");
   const [feedbackStatus, setFeedbackStatus] = createSignal<{
     kind: "success" | "error";
@@ -22,32 +18,6 @@ const SettingsAccount: Component<SettingsAccountProps> = (props) => {
       .catch(() => setCurrentVersion("Unavailable"));
   });
 
-  const handleSubmitFeedback = async () => {
-    setFeedbackSending(true);
-    setFeedbackStatus(null);
-    try {
-      const result = await window.vessel.support.submitFeedback(
-        feedbackEmail(),
-        feedbackMessage(),
-      );
-      if (result.ok) {
-        setFeedbackMessage("");
-        setFeedbackExpanded(false);
-        setFeedbackStatus({
-          kind: "success",
-          text: "Feedback sent. Thank you.",
-        });
-        return;
-      }
-      setFeedbackStatus({
-        kind: "error",
-        text: result.error || "Could not send feedback.",
-      });
-    } finally {
-      setFeedbackSending(false);
-    }
-  };
-
   return (
     <div class="settings-category-panel">
       <div class="settings-field">
@@ -55,72 +25,6 @@ const SettingsAccount: Component<SettingsAccountProps> = (props) => {
         <p class="settings-hint">
           Version {currentVersion() || "Loading…"}
         </p>
-      </div>
-
-      {/* Support */}
-      <div class="settings-field">
-        <label class="settings-label">Support</label>
-        <div class="settings-inline-actions">
-          <button
-            class="settings-secondary-btn"
-            onClick={() => {
-              setFeedbackExpanded(!feedbackExpanded());
-              setFeedbackStatus(null);
-            }}
-          >
-            {feedbackExpanded() ? "Cancel" : "Submit Feedback"}
-          </button>
-        </div>
-        <Show when={feedbackExpanded()}>
-          <div class="settings-feedback-form">
-            <input
-              class="settings-input"
-              type="email"
-              placeholder="Your reply email"
-              value={feedbackEmail()}
-              onInput={(event) => {
-                setFeedbackEmail(event.currentTarget.value);
-                setFeedbackStatus(null);
-              }}
-              spellcheck={false}
-            />
-            <textarea
-              class="settings-textarea settings-feedback-textarea"
-              placeholder="Tell us what happened, what you expected, or what would make Vessel better."
-              value={feedbackMessage()}
-              onInput={(event) => {
-                setFeedbackMessage(event.currentTarget.value);
-                setFeedbackStatus(null);
-              }}
-            />
-            <div class="settings-inline-actions">
-              <button
-                class="settings-secondary-btn"
-                disabled={
-                  feedbackSending() ||
-                  !feedbackEmail().trim() ||
-                  !feedbackMessage().trim()
-                }
-                onClick={handleSubmitFeedback}
-              >
-                {feedbackSending() ? "Sending..." : "Send Feedback"}
-              </button>
-            </div>
-          </div>
-        </Show>
-        <Show when={feedbackStatus()}>
-          {(status) => (
-            <p
-              class="settings-status"
-              classList={{
-                success: status().kind === "success",
-                error: status().kind === "error",
-              }}
-            >
-              {status().text}
-            </p>
-          )}
-        </Show>
       </div>
 
       {/* Vessel Premium */}
