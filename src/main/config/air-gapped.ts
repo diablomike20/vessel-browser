@@ -47,7 +47,9 @@ export function getAirGapBlockReason(url: string): string | null {
     return null;
   }
 
-  if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
+  // Electron reports WebSocket requests as ws:/wss: URLs. They must be
+  // covered too, otherwise browser WebSockets bypass the air-gap filter.
+  if (!["http:", "https:", "ws:", "wss:"].includes(parsed.protocol)) {
     return null;
   }
 
