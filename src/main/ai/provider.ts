@@ -95,7 +95,14 @@ function validateProviderConnection(
       if (!isLocalBaseUrl(normalized.baseUrl)) {
         return "Air-gapped mode only allows local AI providers. Use a localhost base URL for custom providers.";
       }
-    } else if (!isLocalProvider(meta.id)) {
+    } else if (isLocalProvider(meta.id)) {
+      // Local provider IDs must not be allowed to redirect requests to remote
+      // endpoints; provider SDK requests run in the main process and bypass
+      // Electron's browser-session webRequest air-gap filter.
+      if (!isLocalBaseUrl(resolveProviderBaseUrl(normalized))) {
+        return `Air-gapped mode only allows localhost endpoints for ${meta.name}.`;
+      }
+    } else {
       return `Air-gapped mode only allows local AI providers (Ollama, llama.cpp). ${meta.name} requires internet access.`;
     }
   }
