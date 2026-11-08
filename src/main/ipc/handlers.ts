@@ -23,7 +23,6 @@ import { registerSettingsHandlers } from "./settings";
 import { registerSystemHandlers } from "./system";
 import { registerBookmarkHandlers } from "./bookmarks";
 import { registerHistoryHandlers } from "./history";
-import { registerPremiumHandlers } from "./premium";
 import { registerSessionHandlers } from "./sessions";
 import { registerSecurityHandlers } from "./security";
 import { registerCodexHandlers } from "./codex";
