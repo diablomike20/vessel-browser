@@ -428,17 +428,7 @@ const SettingsAgent: Component<SettingsAgentProps> = (props) => {
         <label class="settings-label" for="max-tool-iterations">
           Max Tool Iterations
         </label>
-        <Show
-          when={props.premiumActive()}
-          fallback={
-            <div
-              class="settings-input settings-input-disabled"
-              title="Upgrade to Vessel Premium for unlimited tool iterations"
-            >
-              50
-            </div>
-          }
-        >
+        <Show when={true}>
           <input
             id="max-tool-iterations"
             class="settings-input"
@@ -451,14 +441,9 @@ const SettingsAgent: Component<SettingsAgentProps> = (props) => {
           />
         </Show>
         <p class="settings-hint">
-          <Show
-            when={props.premiumActive()}
-            fallback="Free tier: 50 tool calls per conversation turn. Upgrade to Vessel Premium to customize this limit (up to 1,000)."
-          >
-            Maximum number of tool calls the AI agent can make per conversation
-            turn before pausing. Higher values let the agent complete longer
-            multi-step workflows without stopping. Range: 10–1000.
-          </Show>
+          Maximum number of tool calls the AI agent can make per conversation
+          turn before pausing. Higher values let the agent complete longer
+          multi-step workflows without stopping. Range: 10–1000.
         </p>
       </div>
 
