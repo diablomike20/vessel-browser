@@ -6,7 +6,7 @@ const FREE_TOOL_ITERATION_LIMIT = 50;
 
 // --- Premium feature definitions ---
 
-/** Tools that require a premium subscription */
+/** Hosted-edition gated tools that are enabled in this local CE build. */
 export const PREMIUM_TOOLS = new Set([
   "screenshot",
   "save_session",
@@ -35,7 +35,7 @@ export const PREMIUM_TOOLS = new Set([
   "research_export_report",
 ]);
 
-/** Features gated behind premium (checked by name in UI/IPC) */
+/** Hosted-edition gated features that are enabled in this local CE build. */
 export const PREMIUM_FEATURES = new Set([
   "obsidian",
   "devtools",
@@ -50,8 +50,7 @@ export const PREMIUM_FEATURES = new Set([
 
 /**
  * This fork is the local Community Edition: the open-source feature set is
- * available without a Vessel Premium subscription. Billing/verification state
- * remains separate and is still reported accurately by getPremiumState().
+ * available locally without any Vessel account or subscription check.
  */
 export function isPremium(): boolean {
   return true;
@@ -73,7 +72,7 @@ export function isFeatureGated(featureName: string): boolean {
 }
 
 export function getPremiumToolGateMessage(toolName: string): string {
-  return `This tool (${toolName}) requires Vessel Premium. Upgrade at Settings > Premium to unlock screenshot, session management, workflow tracking, and more.`;
+  return `This tool (${toolName}) is unavailable in this Community Edition build.`;
 }
 
 export function assertToolUnlocked(toolName: string): void {
@@ -87,6 +86,6 @@ export function assertFeatureUnlocked(
   featureLabel = featureName,
 ): void {
   if (isFeatureGated(featureName)) {
-    throw new Error(`${featureLabel} requires Vessel Premium.`);
+    throw new Error(`${featureLabel} is unavailable in this Community Edition build.`);
   }
 }
