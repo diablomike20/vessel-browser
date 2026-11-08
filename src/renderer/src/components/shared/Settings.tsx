@@ -344,9 +344,6 @@ const Settings: Component = () => {
     }
   };
 
-  // CE-local feature availability; no Vessel subscription is consulted.
-  const premiumActive = () => true;
-
   // Chat provider settings
   const [chatEnabled, setChatEnabled] = createSignal(false);
   const [chatProviderId, setChatProviderId] = createSignal<ProviderId>("openrouter");
@@ -721,12 +718,10 @@ const Settings: Component = () => {
                   obsidianVaultPath={obsidianVaultPath}
                   setObsidianVaultPath={setObsidianVaultPath}
                   health={health}
-                  premiumActive={premiumActive}
                 />
               </Show>
               <Show when={activeCategory() === "vaults"}>
                 <SettingsVaults
-                  premiumActive={premiumActive}
                   vault={{
                     entries: vaultEntries,
                     expanded: vaultExpanded,
