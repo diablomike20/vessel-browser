@@ -115,7 +115,6 @@ export function registerIpcHandlers(
   registerPolicyHandlers(reliability.policies, sendToRendererViews);
   registerBookmarkHandlers();
   registerHistoryHandlers();
-  registerPremiumHandlers(tabManager, sendToRendererViews);
   registerSessionHandlers(tabManager);
   registerSecurityHandlers(tabManager);
   registerCodexHandlers();
