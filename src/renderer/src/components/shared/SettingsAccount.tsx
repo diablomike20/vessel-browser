@@ -6,10 +6,6 @@ const SettingsAccount: Component<SettingsAccountProps> = (props) => {
   const p = props.premium;
   const s = props.sessions;
   const [currentVersion, setCurrentVersion] = createSignal("");
-  const [feedbackStatus, setFeedbackStatus] = createSignal<{
-    kind: "success" | "error";
-    text: string;
-  } | null>(null);
 
   onMount(() => {
     void window.vessel.updates
