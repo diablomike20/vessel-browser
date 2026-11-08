@@ -505,6 +505,7 @@ export function loadSettings(): VesselSettings {
     settings = {
       ...defaults,
       ...parsed,
+      telemetryEnabled: false,
       premium: {
         ...defaults.premium,
         ...parsedPremium,
@@ -613,6 +614,8 @@ export function setSetting<K extends keyof VesselSettings>(
         reasoningEffort: sanitizeReasoningEffortLevel(nextProvider.reasoningEffort),
       };
     }
+  } else if (key === "telemetryEnabled") {
+    settings!.telemetryEnabled = false;
   } else if (key === "premium") {
     const nextPremium = value as VesselSettings["premium"];
     if (nextPremium.verificationToken) {
