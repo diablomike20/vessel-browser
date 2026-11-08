@@ -14,7 +14,6 @@ import { HumanVaultChannels } from "./human-vault-channels";
 import { McpChannels } from "./mcp-channels";
 import { OpenRouterChannels } from "./openrouter-channels";
 import { PermissionChannels } from "./permission-channels";
-import { PremiumChannels } from "./premium-channels";
 import { PolicyChannels } from "./policy-channels";
 import { ResearchChannels } from "./research-channels";
 import { RunChannels } from "./run-channels";
@@ -51,7 +50,6 @@ export const Channels = {
   ...McpChannels,
   ...OpenRouterChannels,
   ...PermissionChannels,
-  ...PremiumChannels,
   ...PolicyChannels,
   ...ResearchChannels,
   ...RunChannels,
@@ -85,7 +83,6 @@ export {
   McpChannels,
   OpenRouterChannels,
   PermissionChannels,
-  PremiumChannels,
   PolicyChannels,
   ResearchChannels,
   RunChannels,
