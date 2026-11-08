@@ -22,7 +22,6 @@ import {
 } from "./devtools/tools";
 import { installAdBlocking } from "./network/ad-blocking";
 import { installDownloadHandler } from "./network/downloads";
-import { startBackgroundRevalidation, stopBackgroundRevalidation } from "./premium/manager";
 import { flushBeforeDispose } from "./shutdown";
 import { startTelemetry, stopTelemetry } from "./telemetry/posthog";
 import * as bookmarkManager from "./bookmarks/manager";
@@ -320,7 +319,6 @@ async function bootstrap(): Promise<void> {
 
   installDownloadHandler(chromeView);
   installPermissionHandler();
-  startBackgroundRevalidation();
   startTelemetry();
 
   const initializeChromeRenderer = () => {
@@ -396,7 +394,6 @@ app
 app.on("window-all-closed", () => {
   globalShortcut.unregisterAll();
   stopTelemetry();
-  stopBackgroundRevalidation();
   void flushBeforeDispose(
     [
       runtime,
