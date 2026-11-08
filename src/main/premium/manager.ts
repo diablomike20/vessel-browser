@@ -72,12 +72,20 @@ export function isPremium(): boolean {
   return true;
 }
 
-function redactPremiumToken(state: PremiumState): PremiumState {
-  return { ...state, verificationToken: "" };
-}
-
+/**
+ * Vessel account and billing state is not part of Community Edition.
+ * Never expose stale account identifiers or verification tokens from a
+ * settings file migrated from the hosted edition.
+ */
 export function getPremiumState(): PremiumState {
-  return redactPremiumToken(loadSettings().premium);
+  return {
+    status: "free",
+    customerId: "",
+    verificationToken: "",
+    email: "",
+    validatedAt: "",
+    expiresAt: "",
+  };
 }
 
 export function getEffectiveMaxIterations(): number {
