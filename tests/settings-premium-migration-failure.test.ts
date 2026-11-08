@@ -33,7 +33,7 @@ test("Community Edition discards legacy Vessel identity without requiring secure
     fs.writeFileSync(tokenPath, "old-token");
 
     const settingsModule = await import("../src/main/config/settings");
-    const settings = settingsModule.loadSettings() as Record<string, unknown>;
+    const settings = settingsModule.loadSettings() as unknown as Record<string, unknown>;
     assert.equal(settings.theme, "dark");
     assert.equal("premium" in settings, false);
     assert.equal(fs.existsSync(tokenPath), false);
